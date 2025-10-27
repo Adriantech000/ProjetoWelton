@@ -1,8 +1,35 @@
-import React from 'react';
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet, ImageBackground } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, ImageBackground, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function GreenRoofApp({ navigation }) {
+    // Animações
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(50)).current;
+    const scaleAnim = useRef(new Animated.Value(0.8)).current;
+
+    useEffect(() => {
+        // Animação de entrada do hero
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 1200,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 1000,
+                useNativeDriver: true,
+            }),
+            Animated.spring(scaleAnim, {
+                toValue: 1,
+                tension: 50,
+                friction: 7,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
+
     const benefits = [
         {
             icon: '🌿',
@@ -36,6 +63,191 @@ export default function GreenRoofApp({ navigation }) {
         }
     ];
 
+    // Componente de Card Animado
+    const AnimatedCard = ({ benefit, index }) => {
+        const cardFadeAnim = useRef(new Animated.Value(0)).current;
+        const cardSlideAnim = useRef(new Animated.Value(30)).current;
+        const cardScaleAnim = useRef(new Animated.Value(1)).current;
+        const cardHeightAnim = useRef(new Animated.Value(0)).current;
+        const descriptionOpacity = useRef(new Animated.Value(0)).current;
+        const [isExpanded, setIsExpanded] = React.useState(false);
+
+        useEffect(() => {
+            // Animação de entrada com delay baseado no índice
+            Animated.parallel([
+                Animated.timing(cardFadeAnim, {
+                    toValue: 1,
+                    duration: 600,
+                    delay: index * 150,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(cardSlideAnim, {
+                    toValue: 0,
+                    duration: 600,
+                    delay: index * 150,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        }, []);
+
+        const handleHoverIn = () => {
+            setIsExpanded(true);
+            Animated.parallel([
+                Animated.spring(cardScaleAnim, {
+                    toValue: 1.05,
+                    friction: 7,
+                    tension: 40,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(cardHeightAnim, {
+                    toValue: 1,
+                    duration: 300,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(descriptionOpacity, {
+                    toValue: 1,
+                    duration: 400,
+                    delay: 100,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        };
+
+        const handleHoverOut = () => {
+            setIsExpanded(false);
+            Animated.parallel([
+                Animated.spring(cardScaleAnim, {
+                    toValue: 1,
+                    friction: 7,
+                    tension: 40,
+                    useNativeDriver: true,
+                }),
+                Animated.timing(cardHeightAnim, {
+                    toValue: 0,
+                    duration: 250,
+                    useNativeDriver: false,
+                }),
+                Animated.timing(descriptionOpacity, {
+                    toValue: 0,
+                    duration: 200,
+                    useNativeDriver: true,
+                }),
+            ]).start();
+        };
+
+        const maxHeight = cardHeightAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 200],
+        });
+
+        return (
+            <Animated.View
+                style={[
+                    styles.card,
+                    {
+                        opacity: cardFadeAnim,
+                        transform: [
+                            { translateY: cardSlideAnim },
+                            { scale: cardScaleAnim }
+                        ],
+                    },
+                ]}
+                onMouseEnter={handleHoverIn}
+                onMouseLeave={handleHoverOut}
+            >
+                <View style={styles.cardHeader}>
+                    <View style={styles.iconContainer}>
+                        <Text style={styles.cardIcon}>{benefit.icon}</Text>
+                    </View>
+                    <View style={styles.cardContent}>
+                        <Text style={styles.cardTitle}>{benefit.title}</Text>
+                        <Animated.View
+                            style={{
+                                maxHeight: maxHeight,
+                                overflow: 'hidden',
+                            }}
+                        >
+                            <Animated.Text
+                                style={[
+                                    styles.cardDescription,
+                                    { opacity: descriptionOpacity }
+                                ]}
+                            >
+                                {benefit.description}
+                            </Animated.Text>
+                        </Animated.View>
+                    </View>
+                </View>
+            </Animated.View>
+        );
+    };
+
+    // Componente de Botão Animado
+    const AnimatedButton = () => {
+        const buttonScale = useRef(new Animated.Value(1)).current;
+        const buttonFade = useRef(new Animated.Value(0)).current;
+
+        useEffect(() => {
+            Animated.timing(buttonFade, {
+                toValue: 1,
+                duration: 800,
+                delay: 400,
+                useNativeDriver: true,
+            }).start();
+
+            // Animação de pulso sutil
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(buttonScale, {
+                        toValue: 1.05,
+                        duration: 1500,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(buttonScale, {
+                        toValue: 1,
+                        duration: 1500,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        }, []);
+
+        const handlePressIn = () => {
+            Animated.spring(buttonScale, {
+                toValue: 0.95,
+                useNativeDriver: true,
+            }).start();
+        };
+
+        const handlePressOut = () => {
+            Animated.spring(buttonScale, {
+                toValue: 1,
+                friction: 3,
+                tension: 40,
+                useNativeDriver: true,
+            }).start();
+        };
+
+        return (
+            <Animated.View
+                style={{
+                    opacity: buttonFade,
+                    transform: [{ scale: buttonScale }],
+                }}
+            >
+                <TouchableOpacity
+                    style={styles.button}
+                    onPress={() => navigation.navigate('Detalhes')}
+                    onPressIn={handlePressIn}
+                    onPressOut={handlePressOut}
+                    activeOpacity={0.9}
+                >
+                    <Text style={styles.buttonText}>Solicitar Orçamento</Text>
+                </TouchableOpacity>
+            </Animated.View>
+        );
+    };
+
     return (
         <ScrollView style={styles.container}>
             <View style={styles.heroContainer}>
@@ -44,15 +256,51 @@ export default function GreenRoofApp({ navigation }) {
                     style={styles.hero}
                     resizeMode="cover"
                 >
-                    <View style={styles.overlay}>
-                        <Text style={styles.heroIcon}>🌿</Text>
-                        <Text style={styles.title}>Green Roof</Text>
-                        <Text style={styles.subtitle}>
+                    <Animated.View
+                        style={[
+                            styles.overlay,
+                            {
+                                opacity: fadeAnim,
+                            },
+                        ]}
+                    >
+                        <Animated.Text
+                            style={[
+                                styles.heroIcon,
+                                {
+                                    transform: [
+                                        { scale: scaleAnim },
+                                        { translateY: slideAnim }
+                                    ],
+                                },
+                            ]}
+                        >
+                            🌿
+                        </Animated.Text>
+                        <Animated.Text
+                            style={[
+                                styles.title,
+                                {
+                                    opacity: fadeAnim,
+                                    transform: [{ translateY: slideAnim }],
+                                },
+                            ]}
+                        >
+                            Green Roof
+                        </Animated.Text>
+                        <Animated.Text
+                            style={[
+                                styles.subtitle,
+                                {
+                                    opacity: fadeAnim,
+                                    transform: [{ translateY: slideAnim }],
+                                },
+                            ]}
+                        >
                             Transforme seu telhado em um jardim sustentável
-                        </Text>
-                    </View>
-                    
-                    {/* Gradiente de transição na parte inferior */}
+                        </Animated.Text>
+                    </Animated.View>
+
                     <LinearGradient
                         colors={['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.3)', 'rgba(255, 255, 255, 0.7)', '#ffffff']}
                         style={styles.gradientTransition}
@@ -61,38 +309,67 @@ export default function GreenRoofApp({ navigation }) {
             </View>
 
             <View style={styles.benefitsSection}>
-                <Text style={styles.sectionTitle}>
+                <Animated.Text
+                    style={[
+                        styles.sectionTitle,
+                        {
+                            opacity: fadeAnim,
+                        },
+                    ]}
+                >
                     Por que escolher um telhado verde?
-                </Text>
+                </Animated.Text>
 
                 <View style={styles.cardsContainer}>
                     {benefits.map((benefit, index) => (
-                        <View key={index} style={styles.card}>
-                            <View style={styles.cardHeader}>
-                                <View style={styles.iconContainer}>
-                                    <Text style={styles.cardIcon}>{benefit.icon}</Text>
-                                </View>
-                                <View style={styles.cardContent}>
-                                    <Text style={styles.cardTitle}>{benefit.title}</Text>
-                                    <Text style={styles.cardDescription}>{benefit.description}</Text>
-                                </View>
-                            </View>
-                        </View>
+                        <AnimatedCard
+                            key={index}
+                            benefit={benefit}
+                            index={index}
+                        />
                     ))}
                 </View>
             </View>
 
+            {/* Sobre Nós Section */}
+            <View style={styles.aboutSection}>
+                <View style={styles.aboutContainer}>
+                    <View style={styles.aboutIconWrapper}>
+                        <Text style={styles.aboutIcon}>🌱</Text>
+                    </View>
+                    <Text style={styles.aboutTitle}>Sobre Nós</Text>
+                    <View style={styles.aboutDivider} />
+                    <Text style={styles.aboutText}>
+                        Nossa iniciativa teve início em um ideathon, onde surgiu a proposta de aplicar telhados verdes como solução sustentável para os centros urbanos. A partir de estudos, pesquisas e muita dedicação, transformamos essa ideia em um projeto real, desenvolvendo este site como um espaço para compartilhar nosso propósito e expandir nossa atuação.
+                    </Text>
+                    <Text style={styles.aboutText}>
+                        Nosso objetivo é integrar sustentabilidade e inovação, contribuindo para cidades mais verdes, funcionais e harmoniosas, onde a natureza e a vida urbana coexistam de forma equilibrada.
+                    </Text>
+                </View>
+            </View>
+
             <View style={styles.ctaSection}>
-                <Text style={styles.ctaTitle}>Faça seu orçamento</Text>
-                <Text style={styles.ctaText}>
-                    Entre em contato conosco e descubra como transformar seu telhado em um espaço verde e sustentável
-                </Text>
-                <TouchableOpacity
-                    style={styles.button}
-                    onPress={() => navigation.navigate('Detalhes')}
+                <Animated.Text
+                    style={[
+                        styles.ctaTitle,
+                        {
+                            opacity: fadeAnim,
+                        },
+                    ]}
                 >
-                    <Text style={styles.buttonText}>Solicitar Orçamento</Text>
-                </TouchableOpacity>
+                    Faça seu orçamento
+                </Animated.Text>
+                <Animated.Text
+                    style={[
+                        styles.ctaText,
+                        {
+                            opacity: fadeAnim,
+                        },
+                    ]}
+                >
+                    Entre em contato conosco e descubra como transformar seu telhado em um espaço verde e sustentável
+                </Animated.Text>
+                <AnimatedButton />
             </View>
 
             <View style={styles.footer}>
@@ -187,13 +464,14 @@ const styles = StyleSheet.create({
         padding: 24,
         marginBottom: 24,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 2,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 5,
         width: '48%',
         maxWidth: 400,
         minWidth: 300,
+        minHeight: 100,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -222,6 +500,46 @@ const styles = StyleSheet.create({
         color: '#4b5563',
         lineHeight: 24,
     },
+    aboutSection: {
+        paddingHorizontal: 24,
+        paddingVertical: 80,
+        backgroundColor: '#ffffff',
+        alignItems: 'center',
+    },
+    aboutContainer: {
+        maxWidth: 800,
+        alignItems: 'center',
+    },
+    aboutIconWrapper: {
+        backgroundColor: '#dcfce7',
+        padding: 20,
+        borderRadius: 100,
+        marginBottom: 24,
+    },
+    aboutIcon: {
+        fontSize: 48,
+    },
+    aboutTitle: {
+        fontSize: 36,
+        fontWeight: 'bold',
+        color: '#15803d',
+        marginBottom: 16,
+        textAlign: 'center',
+    },
+    aboutDivider: {
+        width: 80,
+        height: 4,
+        backgroundColor: '#16a34a',
+        borderRadius: 2,
+        marginBottom: 32,
+    },
+    aboutText: {
+        fontSize: 17,
+        color: '#374151',
+        lineHeight: 28,
+        textAlign: 'center',
+        marginBottom: 20,
+    },
     ctaSection: {
         paddingHorizontal: 24,
         paddingVertical: 64,
@@ -248,11 +566,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: 32,
         paddingVertical: 16,
         borderRadius: 9999,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowColor: '#16a34a',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 8,
     },
     buttonText: {
         color: '#fff',
